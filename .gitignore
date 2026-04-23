@@ -1,2 +1,24 @@
-/scripts/generate_building_nmi_mapping.py
+# Mac system files
 .DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+
+# Data (可选，看你们需不需要)
+# data/
+# *.csv
+# *.parquet
+
+# Output files
+output/
