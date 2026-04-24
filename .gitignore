@@ -15,10 +15,15 @@ __pycache__/
 *.toc
 *.synctex.gz
 
-# Data (可选，看你们需不需要)
-data/
+# Data 
+data/ (name of folder)
+dataset/
+Datasets/
 *.csv
+*.xlsx
 *.parquet
+*.txt
+*.pq
 
 # Output files
 output/
