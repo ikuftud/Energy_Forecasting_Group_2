@@ -16,9 +16,9 @@ __pycache__/
 *.synctex.gz
 
 # Data (可选，看你们需不需要)
-# data/
-# *.csv
-# *.parquet
+data/
+*.csv
+*.parquet
 
 # Output files
 output/
