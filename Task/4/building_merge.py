@@ -8,7 +8,7 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_MAPPING_JSON = ROOT / "scripts" / "building_nmi_mapping.json"
+DEFAULT_MAPPING_JSON = ROOT / "Task" / "4" / "building_nmi_mapping.json"
 
 
 def parse_args() -> argparse.Namespace:
