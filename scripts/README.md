@@ -7,24 +7,24 @@ This script merges an NMI-level wide CSV into building-level columns.
 Default command:
 
 ```bash
-python3 scripts/building_merge.py Data/LMS_2013-01-01_2026-03-24_HALF_HOUR_au.csv
+python3 EDA_Tasks/4/building_merge.py Datasets/LMS_2013-01-01_2026-03-24_HALF_HOUR_au.pq
 ```
 
 Command with an explicit output path:
 
 ```bash
-python3 scripts/building_merge.py Data/LMS_2013-01-01_2026-03-24_HALF_HOUR_au.csv --output output/building_level.csv
+python3 EDA_Tasks/4/building_merge.py Datasets/LMS_2013-01-01_2026-03-24_HALF_HOUR_au.pq --output output/building_level.csv
 ```
 
 Command with an explicit mapping file:
 
 ```bash
-python3 scripts/building_merge.py Data/LMS_2013-01-01_2026-03-24_HALF_HOUR_au.csv --mapping-json scripts/building_nmi_mapping.json --output output/building_level.csv
+python3 EDA_Tasks/4/building_merge.py Datasets/LMS_2013-01-01_2026-03-24_HALF_HOUR_au.pq --mapping-json EDA_Tasks/4/building_nmi_mapping.json --output output/building_level.csv
 ```
 
 Mapping source:
 
-- By default this script reads [`scripts/building_nmi_mapping.json`].
+- By default this script reads [`EDA_Tasks/4/building_nmi_mapping.json`].
 - The current mapping JSON contains `9` unmapped NMIs.
 - Those unmapped NMIs are kept as raw NMI column names in the merged output.
 

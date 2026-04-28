@@ -18,7 +18,7 @@ Energy_Forecasting_Group_2/
 │
 ├── scripts/                          # Python scripts (data processing, mapping)
 │
-├── Task/                             # Project EDA part
+├── EDA_Tasks/                        # Project EDA part
 │
 ├── MAST90106 EDA.ipynb               
 ├── Project data exploration.ipynb    
@@ -79,4 +79,3 @@ https://unimelbcloud-my.sharepoint.com/:f:/g/personal/apatupat_student_unimelb_e
 - Multi-NMI comparison plots (subplots of different NMIs)
 - Time series starting from first non-zero value (active period)
 - Total consumption time series (sum across NMIs)
-
