@@ -26,4 +26,12 @@ Datasets/
 *.pq
 
 # Output files
+
 output/
+# Figures
+*.png
+*.jpg
+*.jpeg
+*.svg
+# Reports / exports
+*.pdf
