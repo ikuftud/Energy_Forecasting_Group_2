@@ -1,0 +1,64 @@
+{
+  "max_iterations": 60,
+  "random_seed": 20260513,
+  "random_trials": 3000,
+  "weight_step": 0.025,
+  "change_penalty": 0.03,
+  "tier_d_quantile_values": [0.10, 0.15, 0.20, 0.25],
+  "tier_a_quantile_values": [0.75, 0.80, 0.85],
+  "base_weights": {
+    "performance_score": 0.35,
+    "data_quality_score": 0.20,
+    "history_score": 0.15,
+    "temporal_pattern_score": 0.15,
+    "stability_score": 0.10,
+    "mapping_score": 0.05
+  },
+  "score_levels": [1.0, 0.9, 0.75, 0.5, 0.25, 0.05],
+  "threshold_profiles": {
+    "missing_rate": {
+      "strict": [0.0005, 0.005, 0.02, 0.05, 0.1, null],
+      "base": [0.001, 0.01, 0.05, 0.1, 0.2, null],
+      "lenient": [0.005, 0.02, 0.08, 0.15, 0.3, null]
+    },
+    "zero_rate": {
+      "strict": [0.005, 0.02, 0.05, 0.15, 0.3, null],
+      "base": [0.01, 0.05, 0.1, 0.3, 0.5, null],
+      "lenient": [0.02, 0.08, 0.15, 0.4, 0.65, null]
+    },
+    "longest_zero_run_hours": {
+      "strict": [6, 12, 48, 96, null],
+      "base": [12, 24, 72, 168, null],
+      "lenient": [24, 48, 96, 240, null]
+    },
+    "outlier_rate": {
+      "strict": [0.002, 0.005, 0.015, 0.03, 0.08, null],
+      "base": [0.005, 0.01, 0.03, 0.05, 0.1, null],
+      "lenient": [0.01, 0.02, 0.05, 0.08, 0.15, null]
+    }
+  },
+  "base_threshold_profiles": {
+    "missing_rate": "base",
+    "zero_rate": "base",
+    "longest_zero_run_hours": "base",
+    "outlier_rate": "base"
+  },
+  "logic_weights": {
+    "performance_score": 0.38,
+    "data_quality_score": 0.22,
+    "history_score": 0.08,
+    "temporal_pattern_score": 0.25,
+    "stability_score": 0.05,
+    "mapping_score": 0.02
+  },
+  "logic_threshold_profiles": {
+    "missing_rate": "base",
+    "zero_rate": "base",
+    "longest_zero_run_hours": "lenient",
+    "outlier_rate": "lenient"
+  },
+  "logic_tier_quantiles": {
+    "tier_d_quantile": 0.15,
+    "tier_a_quantile": 0.80
+  }
+}

@@ -24,6 +24,7 @@ Datasets/
 *.parquet
 *.txt
 *.pq
+!nmi_agent_project/cv_review_agent/requirements.txt
 
 # Output files
 

@@ -1,0 +1,21 @@
+{
+  "weights": {
+    "performance_score": 0.28730659574915024,
+    "data_quality_score": 0.26144958209134883,
+    "history_score": 0.16740629568967594,
+    "temporal_pattern_score": 0.14819890309237832,
+    "stability_score": 0.10883212480481666,
+    "mapping_score": 0.026806498572630066
+  },
+  "threshold_profiles": {
+    "missing_rate": "strict",
+    "zero_rate": "base",
+    "longest_zero_run_hours": "base",
+    "outlier_rate": "lenient"
+  },
+  "tier_d_quantile": 0.1,
+  "tier_a_quantile": 0.8,
+  "source": "score_tuning_agent/outputs/optimized_scoring_config_random.json",
+  "source_strategy": "random",
+  "source_random_trials": 3000
+}

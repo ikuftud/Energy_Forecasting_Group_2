@@ -1,0 +1,26 @@
+{
+  "source_run": "forced_two_rounds_10000_20260513_024713",
+  "completed_iterations": 2,
+  "converged": true,
+  "random_trials": 10000,
+  "loop_summary_csv": "nmi_agent_project/final_test/outputs/forced_two_rounds_10000_20260513_024713/final_test_loop_summary.csv",
+  "final_config": {
+    "weights": {
+      "performance_score": 0.13653501401820634,
+      "data_quality_score": 0.1501458750513928,
+      "history_score": 0.23043713817809308,
+      "temporal_pattern_score": 0.2891481787317643,
+      "stability_score": 0.1523883476144208,
+      "mapping_score": 0.04134544640612287
+    },
+    "threshold_profiles": {
+      "missing_rate": "base",
+      "zero_rate": "strict",
+      "longest_zero_run_hours": "lenient",
+      "outlier_rate": "base"
+    },
+    "tier_d_quantile": 0.1,
+    "tier_a_quantile": 0.85,
+    "mode": "random"
+  }
+}

@@ -1,0 +1,12 @@
+# Runtime secrets
+cv_review_agent/nmi_classification_cv_agent_api_key.txt
+
+# Generated agent outputs
+cv_review_agent/outputs/
+score_tuning_agent/outputs/
+final_test/outputs/
+
+# Python/runtime artifacts
+__pycache__/
+*.pyc
+*.log
