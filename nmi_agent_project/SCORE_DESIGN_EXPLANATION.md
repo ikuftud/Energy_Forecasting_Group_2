@@ -1,6 +1,6 @@
 # NMI Forecastability Score 设计说明
 
-这份说明解释 `EDA_Tasks/nmi_score_classification_threshold.py` 里几个核心 score 的设计逻辑：
+这份说明解释 `EDA_Tasks/nmi_score_classification_threshold.py` 里几个核心 score 是怎么计算和分类的：
 
 ```text
 performance_score
@@ -11,11 +11,11 @@ stability_score
 mapping_score
 ```
 
-这些分数都会被标准化到 0 到 1 之间。越接近 1，说明这个 NMI 在这个维度上越适合做预测；越接近 0，说明风险越高或预测难度越大。
+所有 score 都被转成 0 到 1 之间。越接近 1，说明这个 NMI 在这个维度上越适合做预测；越接近 0，说明风险越高或预测难度越大。
 
 ## 总体流程
 
-脚本先为每个 NMI 计算一批诊断指标，比如 baseline WAPE、缺失率、0 值比例、历史长度、周期性、稳定性和建筑映射质量。
+脚本先计算每个 NMI 的原始诊断指标，比如 baseline WAPE、缺失率、0 值比例、历史长度、周期性、稳定性和建筑映射质量。
 
 然后把这些原始指标转换成 6 个 component score：
 
@@ -28,7 +28,7 @@ stability_score         用电模式稳定性
 mapping_score           NMI 和建筑映射可信度
 ```
 
-最后用加权平均得到总分：
+最后用加权平均得到：
 
 ```text
 forecastability_score
@@ -46,6 +46,49 @@ mapping_score            5%
 ```
 
 如果某个 component 缺失，比如某个 NMI 没有足够历史做 WAPE 回测，脚本会自动用剩下的非空 component 重新归一化权重，不会直接让总分变成空值。
+
+## 通用打分规则
+
+这个脚本里有两类打分方式。
+
+### 固定阈值打分
+
+固定阈值用于数据质量类指标。规则很直接：指标落在哪个区间，就给对应分数。
+
+例如：
+
+```text
+missing_rate <= 0.001 -> 1.00
+missing_rate <= 0.010 -> 0.90
+...
+```
+
+### percentile 打分
+
+`history_score`、`temporal_pattern_score` 和 `stability_score` 大多用 percentile 打分。
+
+如果某个指标是“越大越好”，规则是：
+
+```text
+score = 这个 NMI 在所有有效 NMI 中的百分位排名
+```
+
+如果某个指标是“越小越好”，规则是反向的：
+
+```text
+score = 1 - 百分位排名 + 1 / 有效 NMI 数量
+```
+
+所以：
+
+```text
+排名最好 -> score 接近 1
+排名最差 -> score 接近 0
+所有有效值完全一样 -> score = 0.5
+缺失值 -> score 保持缺失
+```
+
+注意：percentile 打分不是固定业务阈值，而是相对排名规则。
 
 ## performance_score
 
@@ -71,11 +114,19 @@ WAPE 越低，预测越好。
 best_baseline_WAPE
 ```
 
-然后用 min-max 方式把 WAPE 转成 0 到 1：
+然后用 min-max 规则转换成 `performance_score`：
 
 ```text
-WAPE 最低的 NMI -> performance_score 接近 1
-WAPE 最高的 NMI -> performance_score 接近 0
+performance_score = 1 - (best_baseline_WAPE - min_WAPE) / (max_WAPE - min_WAPE)
+```
+
+具体含义：
+
+```text
+WAPE 最低的 NMI -> performance_score = 1
+WAPE 最高的 NMI -> performance_score = 0
+如果所有有效 WAPE 都一样 -> performance_score = 0.5
+如果 WAPE 缺失 -> performance_score 缺失
 ```
 
 设计理由：如果一个 NMI 连简单的 lag/calendar baseline 都能预测得不错，说明它本身规律比较清楚，适合进入后续 forecasting model。
@@ -87,17 +138,16 @@ WAPE 最高的 NMI -> performance_score 接近 0
 它由 4 个子分数平均得到：
 
 ```text
-missing_score
-zero_score
-zero_run_score
-outlier_score
+data_quality_score = mean(missing_score, zero_score, zero_run_score, outlier_score)
 ```
+
+缺失的子分数会被跳过，不参与平均。
 
 ### missing_score
 
 来自 `missing_rate`。
 
-缺失率越低，分数越高。脚本使用固定阈值，而不是相对排名：
+缺失率越低，分数越高。固定阈值规则是：
 
 ```text
 missing_rate <= 0.001 -> 1.00
@@ -105,26 +155,60 @@ missing_rate <= 0.010 -> 0.90
 missing_rate <= 0.050 -> 0.75
 missing_rate <= 0.100 -> 0.50
 missing_rate <= 0.200 -> 0.25
-更高                  -> 0.05
+missing_rate >  0.200 -> 0.05
+missing_rate 缺失     -> 缺失
 ```
 
 ### zero_score
 
 来自 `zero_rate`。
 
-0 值比例越低，分数越高。大量 0 值通常说明电表停用、数据中断，或者这个 NMI 不适合单独预测。
+0 值比例越低，分数越高。固定阈值规则是：
+
+```text
+zero_rate <= 0.010 -> 1.00
+zero_rate <= 0.050 -> 0.90
+zero_rate <= 0.100 -> 0.75
+zero_rate <= 0.300 -> 0.50
+zero_rate <= 0.500 -> 0.25
+zero_rate >  0.500 -> 0.05
+zero_rate 缺失     -> 缺失
+```
+
+大量 0 值通常说明电表停用、数据中断，或者这个 NMI 不适合单独预测。
 
 ### zero_run_score
 
 来自 `longest_zero_run_hours`。
 
-它看最长连续 0 值持续了多少小时。短暂的 0 不一定严重，但很长的连续 0 往往代表停用或数据问题。
+它看最长连续 0 值持续了多少小时。固定阈值规则是：
+
+```text
+longest_zero_run_hours <= 12  -> 1.00
+longest_zero_run_hours <= 24  -> 0.90
+longest_zero_run_hours <= 72  -> 0.70
+longest_zero_run_hours <= 168 -> 0.40
+longest_zero_run_hours >  168 -> 0.10
+longest_zero_run_hours 缺失   -> 缺失
+```
+
+短暂的 0 不一定严重，但很长的连续 0 往往代表停用或数据问题。
 
 ### outlier_score
 
 来自 `outlier_rate`。
 
-异常值比例越低，分数越高。异常值用 IQR 规则识别。
+异常值比例越低，分数越高。异常值用 IQR 规则识别。固定阈值规则是：
+
+```text
+outlier_rate <= 0.005 -> 1.00
+outlier_rate <= 0.010 -> 0.90
+outlier_rate <= 0.030 -> 0.75
+outlier_rate <= 0.050 -> 0.50
+outlier_rate <= 0.100 -> 0.25
+outlier_rate >  0.100 -> 0.05
+outlier_rate 缺失     -> 缺失
+```
 
 设计理由：数据质量有明确业务含义，所以这里用固定阈值更直观。比如缺失率 20% 就应该被明显惩罚，不应该只看它在所有 NMI 里的相对排名。
 
@@ -135,30 +219,51 @@ missing_rate <= 0.200 -> 0.25
 它由 3 个子分数平均得到：
 
 ```text
-active_years_score
-recent_coverage_score
-validation_months_score
+history_score = mean(active_years_score, recent_coverage_score, validation_months_score)
 ```
+
+缺失的子分数会被跳过，不参与平均。
 
 ### active_years_score
 
 来自 `active_years`。
 
-active window 是从第一个非 0 读数到最后一个非 0 读数。历史越长，分数越高。
+规则：
+
+```text
+active_years 越大越好
+使用 percentile_score(higher_is_better=True)
+历史越长，在所有 NMI 中排名越高，score 越接近 1
+active_years 缺失 -> active_years_score 缺失
+```
+
+active window 是从第一个非 0 读数到最后一个非 0 读数。
 
 ### recent_coverage_score
 
 来自 `recent_coverage_24m`。
 
-它衡量最近 24 个月里这个 NMI 是否还有有效读数。近期覆盖越好，说明它更适合当前预测任务。
+规则：
+
+```text
+recent_coverage_24m 越大越好
+使用 percentile_score(higher_is_better=True)
+最近 24 个月有效覆盖越高，score 越接近 1
+recent_coverage_24m 缺失 -> recent_coverage_score 缺失
+```
 
 ### validation_months_score
 
 来自 baseline 回测阶段的 `validation_months`。
 
-可验证月份越多，说明 WAPE 评估越可靠。
+规则：
 
-这三个子分数使用 percentile score。也就是说，一个 NMI 的历史长度会和其他 NMI 相比，排名越靠前分数越高。
+```text
+validation_months 越大越好
+使用 percentile_score(higher_is_better=True)
+可验证月份越多，score 越接近 1
+validation_months 缺失 -> validation_months_score 缺失
+```
 
 设计理由：历史维度没有一个绝对完美阈值。比如 4 年和 5 年的差别，不像 missing rate 那样有明确业务红线，所以用相对排名更稳。
 
@@ -166,25 +271,47 @@ active window 是从第一个非 0 读数到最后一个非 0 读数。历史越
 
 `temporal_pattern_score` 衡量用电序列有没有可学习的时间规律。
 
-它由这些子分数平均得到：
+它由 5 个子分数平均得到：
 
 ```text
-lag_48_score
-lag_336_score
-daily_cycle_score
-weekly_pattern_score
-seasonality_score
+temporal_pattern_score = mean(
+  lag_48_score,
+  lag_336_score,
+  daily_cycle_score,
+  weekly_pattern_score,
+  seasonality_score
+)
 ```
+
+缺失的子分数会被跳过，不参与平均。
 
 ### lag_48_score
 
-来自 `lag_48_corr`。
+来自 `abs(lag_48_corr)`。
+
+规则：
+
+```text
+abs(lag_48_corr) 越大越好
+使用 percentile_score(higher_is_better=True)
+昨天同一半小时的相关性越强，score 越接近 1
+lag_48_corr 缺失 -> lag_48_score 缺失
+```
 
 48 个半小时等于 1 天，所以它衡量“今天这个时间”和“昨天同一时间”是否相似。
 
 ### lag_336_score
 
-来自 `lag_336_corr`。
+来自 `abs(lag_336_corr)`。
+
+规则：
+
+```text
+abs(lag_336_corr) 越大越好
+使用 percentile_score(higher_is_better=True)
+上周同一半小时的相关性越强，score 越接近 1
+lag_336_corr 缺失 -> lag_336_score 缺失
+```
 
 336 个半小时等于 7 天，所以它衡量“今天这个时间”和“上周同一时间”是否相似。
 
@@ -192,21 +319,42 @@ seasonality_score
 
 来自 `daily_cycle_strength`。
 
-它看一天内不同时间段的平均负荷是否有稳定形状。比如办公楼白天高、晚上低，就是明显 daily cycle。
+规则：
+
+```text
+daily_cycle_strength 越大越好
+使用 percentile_score(higher_is_better=True)
+日内负荷形状越稳定明显，score 越接近 1
+daily_cycle_strength 缺失 -> daily_cycle_score 缺失
+```
+
+比如办公楼白天高、晚上低，就是明显 daily cycle。
 
 ### weekly_pattern_score
 
 来自 `weekly_pattern_strength`。
 
-它看 weekday/weekend 或不同星期几之间是否存在稳定差异。
+规则：
+
+```text
+weekly_pattern_strength 越大越好
+使用 percentile_score(higher_is_better=True)
+星期几/工作日周末差异越稳定，score 越接近 1
+weekly_pattern_strength 缺失 -> weekly_pattern_score 缺失
+```
 
 ### seasonality_score
 
 来自 `seasonality_strength`。
 
-它看不同月份或季节是否有稳定变化。
+规则：
 
-这些子分数也用 percentile score。规律越强，在所有 NMI 里排名越高，分数越高。
+```text
+seasonality_strength 越大越好
+使用 percentile_score(higher_is_better=True)
+月度或季节性变化越稳定明显，score 越接近 1
+seasonality_strength 缺失 -> seasonality_score 缺失
+```
 
 设计理由：时间规律越强，模型越容易学到重复模式，forecasting 的稳定性通常也更好。
 
@@ -217,28 +365,55 @@ seasonality_score
 它由 3 个子分数平均得到：
 
 ```text
-trend_score
-yearly_variation_score
-structural_break_score_scaled
+stability_score = mean(trend_score, yearly_variation_score, structural_break_score_scaled)
 ```
+
+缺失的子分数会被跳过，不参与平均。
 
 ### trend_score
 
 来自 `trend_strength`。
 
-趋势越强，说明长期负荷水平变化越明显。这里是越小越好，所以 score 会反向计算。
+规则：
+
+```text
+trend_strength 越小越好
+使用 percentile_score(higher_is_better=False)
+长期趋势越弱，score 越接近 1
+trend_strength 缺失 -> trend_score 缺失
+```
+
+趋势越强，说明长期负荷水平变化越明显。
 
 ### yearly_variation_score
 
 来自 `yearly_variation`。
 
-年度之间变化越大，说明这个 NMI 的模式越不稳定。这里也是越小越好。
+规则：
+
+```text
+yearly_variation 越小越好
+使用 percentile_score(higher_is_better=False)
+年度之间变化越小，score 越接近 1
+yearly_variation 缺失 -> yearly_variation_score 缺失
+```
+
+年度之间变化越大，说明这个 NMI 的模式越不稳定。
 
 ### structural_break_score_scaled
 
 来自 `structural_break_score`。
 
-它用 rolling mean 的最大变化衡量是否出现过明显结构突变。突变越大，分数越低。
+规则：
+
+```text
+structural_break_score 越小越好
+使用 percentile_score(higher_is_better=False)
+rolling mean 的最大突变越小，score 越接近 1
+structural_break_score 缺失 -> structural_break_score_scaled 缺失
+```
+
+它用 rolling mean 的最大变化衡量是否出现过明显结构突变。
 
 设计理由：稳定性不是说完全不能变化，而是希望变化不要过于剧烈。如果 NMI 的用电模式经常断崖式变化，模型基于历史学到的规律就更容易失效。
 
@@ -265,6 +440,7 @@ substation_shared_multi_building    -> 0.55
 many_to_many                        -> 0.45
 unknown                             -> 0.30
 unmapped                            -> 0.20
+其他或缺失                           -> 0.30
 ```
 
 设计理由：映射越清楚，越容易解释预测结果，也越容易把 building type、campus、operation pattern 等信息用于建模。映射混乱不一定代表时间序列完全不可预测，但会降低单独建模和业务解释的可靠性，所以权重只给 5%。
@@ -305,6 +481,13 @@ Tier C 不一定代表数据差，而是历史不够长，或者 backtesting 不
 score >= q75 -> Tier A - Strong forecasting candidate
 score <= q25 -> Tier D - Difficult forecasting candidate
 其他         -> Tier B - Usable with caution
+```
+
+其中：
+
+```text
+q75 = eligible NMI 的 forecastability_score 第 75 分位数
+q25 = eligible NMI 的 forecastability_score 第 25 分位数
 ```
 
 设计理由：先把明显不可用和短历史 NMI 分出来，再对真正可比较的 NMI 做相对排序。这样 Tier A/B/D 的含义会更稳定。
