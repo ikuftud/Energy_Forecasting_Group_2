@@ -11,23 +11,24 @@ The project focuses on using historical energy, weather, and billing data to und
 
 ### Github
 
-```
+```text
 Energy_Forecasting_Group_2/
-│
-├── Datasets/                         # Raw datasets (stored locally, not tracked in GitHub)
-│
-├── scripts/                          # Python scripts (data processing, mapping)
-│
-├── EDA_Tasks/                        # Project EDA part
-│
-├── MAST90106 EDA.ipynb               
-├── Project data exploration.ipynb    
-│
-├── project-brief-378.pdf             # Official project description
-│
-├── .gitignore                        # Ignore rules for large files and system files
-└── README.md                         # Project documentation
+├── EDA_Tasks/                        # Existing EDA tasks, mapping and classification
+│   └── Exploration/                  # The two earlier standalone EDA notebooks
+├── Model/
+│   └── LSTM/                         # Three distinct LSTM experiment versions
+├── nmi_agent_project/                # Self-contained NMI classification/tuning tools
+├── scripts/                          # Data-processing utilities
+├── Documents/
+│   └── project-brief-378.pdf          # Official project brief
+├── Datasets/                         # External/local inputs; not tracked here
+├── .gitattributes
+├── .gitignore
+├── readme.md
+└── REPOSITORY_GUIDE.md                # File locations and execution-path notes
 ```
+
+See [REPOSITORY_GUIDE.md](REPOSITORY_GUIDE.md) for notebook locations and working-directory requirements. The later workspace inventory is retained as historical project documentation; it does not imply that every listed dataset or output is tracked in this repository.
 
 
 
@@ -64,7 +65,7 @@ Energy_Forecasting_Group_2/
 
 ## Python File Explanation
 
-#### MAST90106 EDA.ipynb
+#### EDA_Tasks/Exploration/MAST90106 EDA.ipynb
 
 * Removed 2020–2022 data and dropped 2 NMI columns (6102507141 and VAAA003225)
 * Summary statistics computed
@@ -78,7 +79,7 @@ Energy_Forecasting_Group_2/
 
 
 
-#### Project data exploration.ipynb
+#### EDA_Tasks/Exploration/Project data exploration.ipynb
 
 - Half-hourly consumption time series (per NMI)
 - Daily total consumption time series (per NMI)
